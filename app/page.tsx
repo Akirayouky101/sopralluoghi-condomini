@@ -61,7 +61,9 @@ export default function Home() {
   const [report, setReport] = useState("");
   const [message, setMessage] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     async function loadSession() {
@@ -69,6 +71,7 @@ export default function Home() {
       const { data } = await supabase.auth.getSession();
       const currentUser = data.session?.user ?? null;
       setUserId(currentUser?.id ?? null);
+      setUserEmail(currentUser?.email ?? null);
       if (currentUser) {
         await loadComponents(currentUser.id);
       }
@@ -128,6 +131,8 @@ export default function Home() {
 
     const currentUserId = data.user.id;
     setUserId(currentUserId);
+    setUserEmail(data.user.email ?? null);
+    setAuthOpen(false);
     setMessage("Accesso effettuato.");
     await loadComponents(currentUserId);
   }
@@ -163,6 +168,8 @@ export default function Home() {
 
     if (data.user && data.session) {
       setUserId(data.user.id);
+      setUserEmail(data.user.email ?? null);
+      setAuthOpen(false);
       setMessage("Registrazione completata. Sei gia dentro l'app.");
       await loadComponents(data.user.id);
       return;
@@ -177,6 +184,7 @@ export default function Home() {
       await supabase.auth.signOut();
     }
     setUserId(null);
+    setUserEmail(null);
     setMessage("Sei uscito dall'app.");
   }
 
@@ -364,10 +372,30 @@ export default function Home() {
           </div>
           <div className="topbar-actions">
             {userId ? (
-              <button className="secondary-action" onClick={signOut} type="button">
-                Esci
+              <div className="user-profile">
+                <span className="avatar" aria-hidden="true">
+                  {(userEmail ?? "U").slice(0, 1).toUpperCase()}
+                </span>
+                <div>
+                  <strong>Profilo</strong>
+                  <small>{userEmail}</small>
+                </div>
+                <button className="secondary-action compact-action" onClick={signOut} type="button">
+                  Esci
+                </button>
+              </div>
+            ) : (
+              <button
+                className="secondary-action"
+                onClick={() => {
+                  setAuthMode("login");
+                  setAuthOpen(true);
+                }}
+                type="button"
+              >
+                Accedi
               </button>
-            ) : null}
+            )}
             <button className="primary-action" onClick={() => setView("new")} type="button">
               + Nuovo
             </button>
@@ -392,48 +420,6 @@ export default function Home() {
                 <strong>8</strong>
               </article>
             </div>
-
-            {!hasSupabaseConfig || !userId ? (
-              <form className="panel auth-panel" onSubmit={authMode === "login" ? signIn : signUp}>
-                <div className="panel-heading">
-                  <h2>{authMode === "login" ? "Accesso" : "Registrazione"}</h2>
-                  <span>{hasSupabaseConfig ? "Supabase Auth" : "Da configurare"}</span>
-                </div>
-                <div className="auth-switch" aria-label="Modalita accesso">
-                  <button
-                    className={authMode === "login" ? "active" : ""}
-                    onClick={() => setAuthMode("login")}
-                    type="button"
-                  >
-                    Accedi
-                  </button>
-                  <button
-                    className={authMode === "register" ? "active" : ""}
-                    onClick={() => setAuthMode("register")}
-                    type="button"
-                  >
-                    Registrati
-                  </button>
-                </div>
-                <label>
-                  Email
-                  <input name="email" placeholder="tu@email.it" type="email" />
-                </label>
-                <label>
-                  Password
-                  <input name="password" placeholder="Password" type="password" />
-                </label>
-                {authMode === "register" ? (
-                  <label>
-                    Conferma password
-                    <input name="passwordConfirm" placeholder="Ripeti password" type="password" />
-                  </label>
-                ) : null}
-                <button className="primary-action" type="submit">
-                  {authMode === "login" ? "Accedi" : "Crea account"}
-                </button>
-              </form>
-            ) : null}
 
             <div className="survey-list">
               {demoSurveys.map((survey) => (
@@ -680,6 +666,57 @@ export default function Home() {
               </div>
             </div>
           </section>
+        ) : null}
+
+        {authOpen ? (
+          <div className="modal-backdrop" role="presentation">
+            <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+              <button className="modal-close" onClick={() => setAuthOpen(false)} type="button" aria-label="Chiudi">
+                x
+              </button>
+              <div className="modal-heading">
+                <p className="eyebrow">Account personale</p>
+                <h2 id="auth-title">{authMode === "login" ? "Accedi all'app" : "Crea il tuo account"}</h2>
+                <p>Salva sopralluoghi, componenti e materiali nel tuo archivio online.</p>
+              </div>
+              <form className="auth-panel" onSubmit={authMode === "login" ? signIn : signUp}>
+                <div className="auth-switch" aria-label="Modalita accesso">
+                  <button
+                    className={authMode === "login" ? "active" : ""}
+                    onClick={() => setAuthMode("login")}
+                    type="button"
+                  >
+                    Accedi
+                  </button>
+                  <button
+                    className={authMode === "register" ? "active" : ""}
+                    onClick={() => setAuthMode("register")}
+                    type="button"
+                  >
+                    Registrati
+                  </button>
+                </div>
+                {!hasSupabaseConfig ? <p className="notice">Supabase non e configurato.</p> : null}
+                <label>
+                  Email
+                  <input name="email" placeholder="tu@email.it" required type="email" />
+                </label>
+                <label>
+                  Password
+                  <input name="password" placeholder="Password" required type="password" />
+                </label>
+                {authMode === "register" ? (
+                  <label>
+                    Conferma password
+                    <input name="passwordConfirm" placeholder="Ripeti password" required type="password" />
+                  </label>
+                ) : null}
+                <button className="primary-action" type="submit">
+                  {authMode === "login" ? "Accedi" : "Crea account"}
+                </button>
+              </form>
+            </div>
+          </div>
         ) : null}
       </main>
     </>
