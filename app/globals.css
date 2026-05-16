@@ -886,9 +886,33 @@ textarea {
   margin-bottom: 14px;
 }
 
+.material-picker-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.material-picker-heading strong,
+.material-picker-heading span {
+  display: block;
+}
+
+.material-picker-heading span,
+.material-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .picker-toolbar {
   grid-template-columns: minmax(0, 1fr) 210px;
   margin-bottom: 12px;
+}
+
+.compact-component-list {
+  max-height: 260px;
+  overflow: auto;
 }
 
 .component-row {
@@ -1137,6 +1161,11 @@ textarea {
   .topbar-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .material-picker-heading {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .topbar {

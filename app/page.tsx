@@ -97,11 +97,12 @@ export default function Home() {
 
   const filteredComponents = useMemo(() => {
     const term = componentSearch.toLowerCase();
+    if (term.trim().length < 2) return [];
     return components.filter((component) => {
       const matchesTerm = [component.name, component.category, component.unit].join(" ").toLowerCase().includes(term);
       const matchesCategory = categoryFilter === "all" || component.category === categoryFilter;
       return matchesTerm && matchesCategory;
-    });
+    }).slice(0, 5);
   }, [categoryFilter, componentSearch, components]);
 
   async function loadComponents(ownerId: string) {
@@ -822,10 +823,19 @@ export default function Home() {
                   <span>3/4</span>
                 </div>
                 <div className="material-picker">
+                  <div className="material-picker-heading">
+                    <div>
+                      <strong>Ricerca rapida componenti</strong>
+                      <span>Cerca e aggiungi solo i materiali utili a questo sopralluogo.</span>
+                    </div>
+                    <button className="secondary-action compact-action" onClick={() => setView("components")} type="button">
+                      Gestisci componenti
+                    </button>
+                  </div>
                   <div className="picker-toolbar">
                     <input
                       onChange={(event) => setComponentSearch(event.target.value)}
-                      placeholder="Cerca componente frequente"
+                      placeholder="Cerca almeno 2 caratteri, es. plafoniera"
                       type="search"
                       value={componentSearch}
                     />
@@ -837,11 +847,17 @@ export default function Home() {
                       ))}
                     </select>
                   </div>
-                  <div className="component-list">
-                    {filteredComponents.map((component) => (
-                      <ComponentPickerRow component={component} key={component.id ?? component.name} onAdd={addMaterial} />
-                    ))}
-                  </div>
+                  {componentSearch.trim().length < 2 ? (
+                    <p className="material-empty">Il catalogo completo resta nella sezione Componenti.</p>
+                  ) : filteredComponents.length ? (
+                    <div className="component-list compact-component-list">
+                      {filteredComponents.map((component) => (
+                        <ComponentPickerRow component={component} key={component.id ?? component.name} onAdd={addMaterial} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="material-empty">Nessun componente trovato. Puoi aggiungerlo da Componenti.</p>
+                  )}
                 </div>
                 <div className="split">
                   <label>
