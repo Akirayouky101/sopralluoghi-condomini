@@ -62,12 +62,16 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     async function loadSession() {
-      if (!supabase) return;
+      if (!supabase) {
+        setAuthChecked(true);
+        return;
+      }
       const { data } = await supabase.auth.getSession();
       const currentUser = data.session?.user ?? null;
       setUserId(currentUser?.id ?? null);
@@ -75,6 +79,7 @@ export default function Home() {
       if (currentUser) {
         await loadComponents(currentUser.id);
       }
+      setAuthChecked(true);
     }
 
     loadSession();
@@ -185,6 +190,7 @@ export default function Home() {
     }
     setUserId(null);
     setUserEmail(null);
+    setView("dashboard");
     setMessage("Sei uscito dall'app.");
   }
 
@@ -330,6 +336,127 @@ export default function Home() {
         "Note:",
         draft.notes || "Nessuna nota inserita",
       ].join("\n"),
+    );
+  }
+
+  const authModal = authOpen ? (
+    <div className="modal-backdrop" role="presentation">
+      <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <button className="modal-close" onClick={() => setAuthOpen(false)} type="button" aria-label="Chiudi">
+          x
+        </button>
+        <div className="modal-heading">
+          <p className="eyebrow">Account personale</p>
+          <h2 id="auth-title">{authMode === "login" ? "Accedi all'app" : "Crea il tuo account"}</h2>
+          <p>Salva sopralluoghi, componenti e materiali nel tuo archivio online.</p>
+        </div>
+        <form className="auth-panel" onSubmit={authMode === "login" ? signIn : signUp}>
+          <div className="auth-switch" aria-label="Modalita accesso">
+            <button
+              className={authMode === "login" ? "active" : ""}
+              onClick={() => setAuthMode("login")}
+              type="button"
+            >
+              Accedi
+            </button>
+            <button
+              className={authMode === "register" ? "active" : ""}
+              onClick={() => setAuthMode("register")}
+              type="button"
+            >
+              Registrati
+            </button>
+          </div>
+          {!hasSupabaseConfig ? <p className="notice">Supabase non e configurato.</p> : null}
+          <label>
+            Email
+            <input name="email" placeholder="tu@email.it" required type="email" />
+          </label>
+          <label>
+            Password
+            <input name="password" placeholder="Password" required type="password" />
+          </label>
+          {authMode === "register" ? (
+            <label>
+              Conferma password
+              <input name="passwordConfirm" placeholder="Ripeti password" required type="password" />
+            </label>
+          ) : null}
+          <button className="primary-action" type="submit">
+            {authMode === "login" ? "Accedi" : "Crea account"}
+          </button>
+        </form>
+      </div>
+    </div>
+  ) : null;
+
+  if (!authChecked) {
+    return (
+      <>
+        <aside className="sidebar">
+          <div className="brand">
+            <span className="brand-mark">SC</span>
+            <div>
+              <strong>Sopralluoghi</strong>
+              <small>Mini gestionale tecnico</small>
+            </div>
+          </div>
+        </aside>
+        <main className="locked-main">
+          <section className="locked-panel">
+            <p className="eyebrow">Accesso riservato</p>
+            <h1>Caricamento sessione</h1>
+            <p>Controllo l'accesso al tuo archivio tecnico.</p>
+          </section>
+        </main>
+      </>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <>
+        <aside className="sidebar">
+          <div className="brand">
+            <span className="brand-mark">SC</span>
+            <div>
+              <strong>Sopralluoghi</strong>
+              <small>Mini gestionale tecnico</small>
+            </div>
+          </div>
+        </aside>
+        <main className="locked-main">
+          {message ? <p className="notice locked-notice">{message}</p> : null}
+          <section className="locked-panel">
+            <p className="eyebrow">Accesso riservato</p>
+            <h1>Sopralluoghi Condomini</h1>
+            <p>Accedi o registrati per usare il gestionale, salvare componenti e creare sopralluoghi.</p>
+            <div className="locked-actions">
+              <button
+                className="primary-action"
+                onClick={() => {
+                  setAuthMode("login");
+                  setAuthOpen(true);
+                }}
+                type="button"
+              >
+                Accedi
+              </button>
+              <button
+                className="secondary-action"
+                onClick={() => {
+                  setAuthMode("register");
+                  setAuthOpen(true);
+                }}
+                type="button"
+              >
+                Registrati
+              </button>
+            </div>
+          </section>
+          {authModal}
+        </main>
+      </>
     );
   }
 
@@ -668,56 +795,7 @@ export default function Home() {
           </section>
         ) : null}
 
-        {authOpen ? (
-          <div className="modal-backdrop" role="presentation">
-            <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-              <button className="modal-close" onClick={() => setAuthOpen(false)} type="button" aria-label="Chiudi">
-                x
-              </button>
-              <div className="modal-heading">
-                <p className="eyebrow">Account personale</p>
-                <h2 id="auth-title">{authMode === "login" ? "Accedi all'app" : "Crea il tuo account"}</h2>
-                <p>Salva sopralluoghi, componenti e materiali nel tuo archivio online.</p>
-              </div>
-              <form className="auth-panel" onSubmit={authMode === "login" ? signIn : signUp}>
-                <div className="auth-switch" aria-label="Modalita accesso">
-                  <button
-                    className={authMode === "login" ? "active" : ""}
-                    onClick={() => setAuthMode("login")}
-                    type="button"
-                  >
-                    Accedi
-                  </button>
-                  <button
-                    className={authMode === "register" ? "active" : ""}
-                    onClick={() => setAuthMode("register")}
-                    type="button"
-                  >
-                    Registrati
-                  </button>
-                </div>
-                {!hasSupabaseConfig ? <p className="notice">Supabase non e configurato.</p> : null}
-                <label>
-                  Email
-                  <input name="email" placeholder="tu@email.it" required type="email" />
-                </label>
-                <label>
-                  Password
-                  <input name="password" placeholder="Password" required type="password" />
-                </label>
-                {authMode === "register" ? (
-                  <label>
-                    Conferma password
-                    <input name="passwordConfirm" placeholder="Ripeti password" required type="password" />
-                  </label>
-                ) : null}
-                <button className="primary-action" type="submit">
-                  {authMode === "login" ? "Accedi" : "Crea account"}
-                </button>
-              </form>
-            </div>
-          </div>
-        ) : null}
+        {authModal}
       </main>
     </>
   );

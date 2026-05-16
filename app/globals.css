@@ -237,7 +237,7 @@ h2 {
 
 .stat {
   border-top: 4px solid var(--accent);
-  padding: 18px;
+  padding: 20px;
 }
 
 .stat:nth-child(2) {
@@ -256,8 +256,15 @@ h2 {
   color: var(--muted);
 }
 
+.stat span {
+  display: block;
+  margin-bottom: 14px;
+}
+
 .stat strong {
-  font-size: 2rem;
+  display: block;
+  font-size: 2.15rem;
+  line-height: 1;
 }
 
 .panel,
@@ -357,6 +364,45 @@ h2 {
 .modal-heading p:last-child {
   color: var(--muted);
   margin-bottom: 0;
+}
+
+.locked-main {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.locked-panel {
+  width: min(560px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.locked-panel h1 {
+  margin-bottom: 12px;
+}
+
+.locked-panel p:last-of-type {
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+
+.locked-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.locked-notice {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  max-width: min(420px, calc(100vw - 36px));
+  z-index: 15;
 }
 
 .survey-list,
