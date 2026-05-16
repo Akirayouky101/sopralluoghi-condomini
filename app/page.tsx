@@ -51,6 +51,7 @@ const emptyDraft: SurveyDraft = {
 };
 
 type ViewName = "dashboard" | "new" | "library" | "components" | "settings";
+type DemoSurvey = (typeof demoSurveys)[number];
 
 export default function Home() {
   const [view, setView] = useState<ViewName>("dashboard");
@@ -66,6 +67,8 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authOpen, setAuthOpen] = useState(false);
+  const [selectedSurvey, setSelectedSurvey] = useState<DemoSurvey | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   useEffect(() => {
     async function loadSession() {
@@ -180,7 +183,7 @@ export default function Home() {
     setUserEmail(data.user.email ?? null);
     await loadProfile(currentUserId, data.user.user_metadata);
     setAuthOpen(false);
-    setMessage("Accesso effettuato.");
+    setMessage("");
     await loadComponents(currentUserId);
   }
 
@@ -274,6 +277,15 @@ export default function Home() {
       ...current,
       materials: current.materials.trim() ? `${current.materials}\n${line}` : line,
     }));
+  }
+
+  function updateAttachments(files: FileList | null) {
+    if (!files) return;
+    setAttachments((current) => [...current, ...Array.from(files)]);
+  }
+
+  function removeAttachment(index: number) {
+    setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
   async function addComponent(event: FormEvent<HTMLFormElement>) {
@@ -380,6 +392,7 @@ export default function Home() {
     setMessage("Sopralluogo salvato nel database.");
     buildReport();
     setDraft(emptyDraft);
+    setAttachments([]);
   }
 
   function buildReport() {
@@ -395,6 +408,9 @@ export default function Home() {
         "Materiali:",
         draft.materials || "Nessun materiale inserito",
         "",
+        "Foto e documenti:",
+        attachments.length ? attachments.map((file) => file.name).join("\n") : "Nessun allegato inserito",
+        "",
         "Note:",
         draft.notes || "Nessuna nota inserita",
       ].join("\n"),
@@ -403,6 +419,61 @@ export default function Home() {
 
   const profileLabel = profile?.full_name || userEmail || "Profilo";
   const profileDetail = profile?.company || userEmail;
+  const selectedSurveyModal = selectedSurvey ? (
+    <div className="modal-backdrop" role="presentation">
+      <div className="summary-modal" role="dialog" aria-modal="true" aria-labelledby="survey-summary-title">
+        <button className="modal-close" onClick={() => setSelectedSurvey(null)} type="button" aria-label="Chiudi">
+          x
+        </button>
+        <div className="summary-heading">
+          <span className={`badge ${statusClass(selectedSurvey.status)}`}>{selectedSurvey.status}</span>
+          <h2 id="survey-summary-title">{selectedSurvey.name}</h2>
+          <p>{selectedSurvey.meta}</p>
+        </div>
+        <div className="summary-grid">
+          <section>
+            <h3>Riepilogo lavorazione</h3>
+            <p>{selectedSurvey.summary}</p>
+          </section>
+          <section>
+            <h3>Sezioni interessate</h3>
+            <ul>
+              {selectedSurvey.works.map((work) => (
+                <li key={work}>{work}</li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <h3>Materiali previsti</h3>
+            <ul>
+              {selectedSurvey.materials.map((material) => (
+                <li key={material}>{material}</li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <h3>Prossima azione</h3>
+            <p>{selectedSurvey.nextAction}</p>
+          </section>
+        </div>
+        <div className="actions">
+          <button className="secondary-action" onClick={() => setSelectedSurvey(null)} type="button">
+            Chiudi
+          </button>
+          <button
+            className="primary-action"
+            onClick={() => {
+              setSelectedSurvey(null);
+              setView("new");
+            }}
+            type="button"
+          >
+            Crea sopralluogo simile
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   const authModal = authOpen ? (
     <div className="modal-backdrop" role="presentation">
@@ -654,14 +725,14 @@ export default function Home() {
 
             <div className="survey-list">
               {demoSurveys.map((survey) => (
-                <article className="survey-card" key={survey.name}>
+                <button className="survey-card survey-card-button" key={survey.name} onClick={() => setSelectedSurvey(survey)} type="button">
                   <div>
                     <h3>{survey.name}</h3>
                     <p className="survey-meta">{survey.meta}</p>
                     <p className="survey-meta">{survey.summary}</p>
                   </div>
                   <span className={`badge ${statusClass(survey.status)}`}>{survey.status}</span>
-                </article>
+                </button>
               ))}
             </div>
           </section>
@@ -798,8 +869,28 @@ export default function Home() {
                   <span>4/4</span>
                 </div>
                 <div className="photo-box">
-                  <input accept="image/*" multiple type="file" />
-                  <p>Il prossimo blocco collega queste foto allo storage Supabase.</p>
+                  <label className="upload-dropzone">
+                    <strong>Aggiungi foto o documenti</strong>
+                    <span>Puoi selezionare immagini, PDF o documenti dal dispositivo.</span>
+                    <input accept="image/*,.pdf,.doc,.docx" multiple onChange={(event) => updateAttachments(event.target.files)} type="file" />
+                  </label>
+                  {attachments.length ? (
+                    <div className="attachment-list">
+                      {attachments.map((file, index) => (
+                        <article className="attachment-item" key={`${file.name}-${index}`}>
+                          <div>
+                            <strong>{file.name}</strong>
+                            <span>{formatFileSize(file.size)}</span>
+                          </div>
+                          <button className="secondary-action compact-action" onClick={() => removeAttachment(index)} type="button">
+                            Rimuovi
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>Nessun allegato selezionato.</p>
+                  )}
                 </div>
                 <div className="actions">
                   <button className="secondary-action" onClick={buildReport} type="button">
@@ -884,22 +975,63 @@ export default function Home() {
 
         {view === "settings" ? (
           <section className="view active">
+            <div className="settings-grid">
             <div className="panel">
               <div className="panel-heading">
-                <h2>Configurazione online</h2>
-                <span>Vercel + Supabase</span>
+                <h2>Profilo attività</h2>
+                <span>Account</span>
               </div>
-              <div className="roadmap">
-                <p>1. Crea progetto Supabase e applica lo schema SQL.</p>
-                <p>2. Crea utente con email e password in Supabase Auth.</p>
-                <p>3. Inserisci URL e anon key in Vercel come variabili ambiente.</p>
-                <p>4. Collega il repository a Vercel e pubblica.</p>
+              <div className="settings-list">
+                <p><strong>Nome</strong><span>{profile?.full_name || "Non impostato"}</span></p>
+                <p><strong>Azienda</strong><span>{profile?.company || "Non impostata"}</span></p>
+                <p><strong>Telefono</strong><span>{profile?.phone || "Non impostato"}</span></p>
+                <p><strong>Email</strong><span>{userEmail}</span></p>
               </div>
+            </div>
+            <div className="panel">
+              <div className="panel-heading">
+                <h2>Preferenze sopralluogo</h2>
+                <span>Default</span>
+              </div>
+              <div className="settings-list">
+                <label>
+                  Stato nuovo sopralluogo
+                  <select defaultValue="Bozza">
+                    <option>Bozza</option>
+                    <option>Da completare</option>
+                    <option>Pronto per preventivo</option>
+                  </select>
+                </label>
+                <label>
+                  Formato relazione
+                  <select defaultValue="Tecnica dettagliata">
+                    <option>Tecnica dettagliata</option>
+                    <option>Sintetica per preventivo</option>
+                  </select>
+                </label>
+                <label className="setting-check">
+                  <input defaultChecked type="checkbox" />
+                  Includi lista materiali nel riepilogo
+                </label>
+              </div>
+            </div>
+            <div className="panel">
+              <div className="panel-heading">
+                <h2>Stato servizi</h2>
+                <span>Online</span>
+              </div>
+              <div className="service-list">
+                <p><strong>Supabase</strong><span>Configurato</span></p>
+                <p><strong>Autenticazione</strong><span>Attiva</span></p>
+                <p><strong>Storage foto</strong><span>Prossimo collegamento cloud</span></p>
+              </div>
+            </div>
             </div>
           </section>
         ) : null}
 
         {authModal}
+        {selectedSurveyModal}
       </main>
     </>
   );
@@ -947,23 +1079,37 @@ function statusClass(status: string) {
   return "";
 }
 
+function formatFileSize(size: number) {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
 const demoSurveys = [
   {
     name: "Condominio Verdi",
     meta: "Via Verdi 18, Torino · Studio Rossi · 14/05/2026",
     summary: "Messa a terra da verificare, illuminazione scale da aggiornare.",
     status: "Da completare",
+    works: ["Messa a terra", "Illuminazione scale", "Quadro parti comuni"],
+    materials: ["6 plafoniere LED IP65", "1 collettore equipotenziale", "40 m cavo FG16"],
+    nextAction: "Completare rilievo fotografico del locale contatori e confermare misure dispersione.",
   },
   {
     name: "Residenza Milano",
     meta: "Corso Italia 7, Milano · Sig.ra Bianchi · 11/05/2026",
     summary: "Quadro parti comuni e sensori presenza in autorimessa.",
     status: "Pronto per preventivo",
+    works: ["Autorimessa e corselli", "Impianto elettrico parti comuni"],
+    materials: ["8 sensori presenza", "1 quadro IP65", "2 differenziali"],
+    nextAction: "Preparare preventivo con opzione sensori presenza e aggiornamento quadro.",
   },
   {
     name: "Condominio Giardino",
     meta: "Via Manzoni 42, Monza · Amministrazione Nord · 09/05/2026",
     summary: "Sopralluogo iniziato, mancano foto locale tecnico.",
     status: "Bozza",
+    works: ["Locale tecnico", "Cancelli e automazioni"],
+    materials: ["Materiali da confermare dopo secondo accesso"],
+    nextAction: "Richiedere accesso al locale tecnico e completare scheda cancelli.",
   },
 ];

@@ -663,12 +663,78 @@ h2 {
     box-shadow 150ms ease;
 }
 
+.survey-card-button {
+  width: 100%;
+  border: 1px solid var(--line);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
 .survey-card:hover,
 .component-row:hover,
 .template-card:hover {
   border-color: rgba(0, 119, 217, 0.28);
   box-shadow: var(--shadow);
   transform: translateY(-1px);
+}
+
+.summary-modal {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 28px 80px rgba(13, 42, 70, 0.28);
+  padding: 26px;
+}
+
+.summary-heading {
+  text-align: center;
+  padding: 8px 42px 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+
+.summary-heading h2 {
+  font-size: 1.65rem;
+  margin: 12px 0 8px;
+}
+
+.summary-heading p {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.summary-grid section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  padding: 16px;
+}
+
+.summary-grid h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.summary-grid p,
+.summary-grid ul {
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.summary-grid ul {
+  padding-left: 18px;
 }
 
 .survey-card h3 {
@@ -862,6 +928,53 @@ textarea {
   margin: 10px 0 0;
 }
 
+.upload-dropzone {
+  border: 1px dashed rgba(0, 119, 217, 0.36);
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  text-align: center;
+}
+
+.upload-dropzone span {
+  color: var(--muted);
+}
+
+.upload-dropzone input {
+  display: none;
+}
+
+.attachment-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.attachment-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.attachment-item strong,
+.attachment-item span {
+  display: block;
+}
+
+.attachment-item span {
+  color: var(--muted);
+  margin-top: 3px;
+  font-size: 0.86rem;
+}
+
 .actions {
   justify-content: flex-end;
   margin-top: 16px;
@@ -877,6 +990,52 @@ textarea {
 .roadmap p:last-child,
 .report p:last-child {
   margin-bottom: 0;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-grid .panel:first-child {
+  grid-column: 1 / -1;
+}
+
+.settings-list,
+.service-list {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-list p,
+.service-list p {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  margin: 0;
+  padding: 12px;
+}
+
+.settings-list span,
+.service-list span {
+  color: var(--muted);
+  text-align: right;
+}
+
+.setting-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+}
+
+.setting-check input {
+  width: 18px;
+  min-height: 18px;
 }
 
 @media (max-width: 920px) {
@@ -937,6 +1096,8 @@ textarea {
 
   .stats-grid,
   .template-grid,
+  .summary-grid,
+  .settings-grid,
   .form-grid,
   .split,
   .check-grid,
@@ -954,6 +1115,22 @@ textarea {
 
   .survey-card {
     grid-template-columns: 1fr;
+  }
+
+  .attachment-item,
+  .settings-list p,
+  .service-list p {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-list p,
+  .service-list p {
+    display: grid;
+  }
+
+  .settings-list span,
+  .service-list span {
+    text-align: left;
   }
 
   .actions,
