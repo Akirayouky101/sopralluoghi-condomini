@@ -529,6 +529,11 @@ export default function Home() {
             <p className="eyebrow">Accesso riservato</p>
             <h1>Sopralluoghi Condomini</h1>
             <p>Accedi o registrati per usare il gestionale, salvare componenti e creare sopralluoghi.</p>
+            <div className="locked-highlights" aria-label="Funzioni principali">
+              <span>Schede tecniche guidate</span>
+              <span>Archivio materiali</span>
+              <span>Database online</span>
+            </div>
             <div className="locked-actions">
               <button
                 className="primary-action"
@@ -654,7 +659,7 @@ export default function Home() {
                     <p className="survey-meta">{survey.meta}</p>
                     <p className="survey-meta">{survey.summary}</p>
                   </div>
-                  <span className="badge">{survey.status}</span>
+                  <span className={`badge ${statusClass(survey.status)}`}>{survey.status}</span>
                 </article>
               ))}
             </div>
@@ -933,6 +938,13 @@ const viewTitles: Record<ViewName, string> = {
   components: "Database componenti",
   settings: "Impostazioni",
 };
+
+function statusClass(status: string) {
+  if (status === "Da completare") return "status-open";
+  if (status === "Pronto per preventivo") return "status-ready";
+  if (status === "Bozza") return "status-draft";
+  return "";
+}
 
 const demoSurveys = [
   {
