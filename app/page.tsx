@@ -410,63 +410,80 @@ export default function Home() {
         <button className="modal-close" onClick={() => setAuthOpen(false)} type="button" aria-label="Chiudi">
           x
         </button>
-        <div className="modal-heading">
-          <p className="eyebrow">Account personale</p>
-          <h2 id="auth-title">{authMode === "login" ? "Accedi all'app" : "Crea il tuo account"}</h2>
-          <p>Salva sopralluoghi, componenti e materiali nel tuo archivio online.</p>
-        </div>
-        <form className="auth-panel" onSubmit={authMode === "login" ? signIn : signUp}>
-          <div className="auth-switch" aria-label="Modalita accesso">
-            <button
-              className={authMode === "login" ? "active" : ""}
-              onClick={() => setAuthMode("login")}
-              type="button"
-            >
-              Accedi
-            </button>
-            <button
-              className={authMode === "register" ? "active" : ""}
-              onClick={() => setAuthMode("register")}
-              type="button"
-            >
-              Registrati
-            </button>
+        <div className="modal-visual">
+          <span className="modal-badge">Area riservata</span>
+          <div className="modal-logo">SC</div>
+          <h3>Sopralluoghi Condomini</h3>
+          <p>Archivio tecnico, componenti e relazioni sempre disponibili.</p>
+          <div className="modal-feature-list">
+            <span>Database componenti</span>
+            <span>Schede tecniche</span>
+            <span>Salvataggio cloud</span>
           </div>
-          {!hasSupabaseConfig ? <p className="notice">Supabase non e configurato.</p> : null}
-          {authMode === "register" ? (
-            <>
-              <label>
-                Nome e cognome
-                <input name="fullName" placeholder="Mario Rossi" required type="text" />
-              </label>
-              <label>
-                Azienda
-                <input name="company" placeholder="Rossi Impianti" type="text" />
-              </label>
-              <label>
-                Telefono
-                <input name="phone" placeholder="+39 333 1234567" type="tel" />
-              </label>
-            </>
-          ) : null}
-          <label>
-            Email
-            <input name="email" placeholder="tu@email.it" required type="email" />
-          </label>
-          <label>
-            Password
-            <input name="password" placeholder="Password" required type="password" />
-          </label>
-          {authMode === "register" ? (
+        </div>
+        <div className="modal-content">
+          <div className="modal-heading">
+            <p className="eyebrow">Account personale</p>
+            <h2 id="auth-title">{authMode === "login" ? "Bentornato" : "Crea il tuo account"}</h2>
+            <p>
+              {authMode === "login"
+                ? "Accedi per continuare a gestire i tuoi sopralluoghi."
+                : "Inserisci i dati base del profilo per completare la registrazione."}
+            </p>
+          </div>
+          <form className="auth-panel" onSubmit={authMode === "login" ? signIn : signUp}>
+            <div className="auth-switch" aria-label="Modalita accesso">
+              <button
+                className={authMode === "login" ? "active" : ""}
+                onClick={() => setAuthMode("login")}
+                type="button"
+              >
+                Accedi
+              </button>
+              <button
+                className={authMode === "register" ? "active" : ""}
+                onClick={() => setAuthMode("register")}
+                type="button"
+              >
+                Registrati
+              </button>
+            </div>
+            {!hasSupabaseConfig ? <p className="notice">Supabase non e configurato.</p> : null}
+            {authMode === "register" ? (
+              <div className="auth-field-grid">
+                <label>
+                  Nome e cognome
+                  <input name="fullName" placeholder="Mario Rossi" required type="text" />
+                </label>
+                <label>
+                  Azienda
+                  <input name="company" placeholder="Rossi Impianti" type="text" />
+                </label>
+                <label>
+                  Telefono
+                  <input name="phone" placeholder="+39 333 1234567" type="tel" />
+                </label>
+              </div>
+            ) : null}
             <label>
-              Conferma password
-              <input name="passwordConfirm" placeholder="Ripeti password" required type="password" />
+              Email
+              <input name="email" placeholder="tu@email.it" required type="email" />
             </label>
-          ) : null}
-          <button className="primary-action" type="submit">
-            {authMode === "login" ? "Accedi" : "Crea account"}
-          </button>
-        </form>
+            <label>
+              Password
+              <input name="password" placeholder="Password" required type="password" />
+            </label>
+            {authMode === "register" ? (
+              <label>
+                Conferma password
+                <input name="passwordConfirm" placeholder="Ripeti password" required type="password" />
+              </label>
+            ) : null}
+            <button className="primary-action auth-submit" type="submit">
+              {authMode === "login" ? "Accedi" : "Crea account"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   ) : null;
