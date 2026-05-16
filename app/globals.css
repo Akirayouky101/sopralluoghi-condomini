@@ -737,6 +737,41 @@ h2 {
   padding-left: 18px;
 }
 
+.work-detail-modal {
+  position: relative;
+  width: min(820px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 28px 80px rgba(13, 42, 70, 0.28);
+  padding: 26px;
+}
+
+.work-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.work-detail-notes {
+  grid-column: 1 / -1;
+}
+
+.detail-materials {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.materials-list-modal {
+  display: grid;
+  gap: 10px;
+}
+
 .survey-card h3 {
   margin: 0 0 5px;
   font-size: 1.08rem;
@@ -877,6 +912,16 @@ textarea {
   padding: 9px 10px;
 }
 
+.check-note {
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--mint-soft);
+  color: #00735f;
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .check-grid input {
   width: 18px;
   min-height: 18px;
@@ -884,6 +929,35 @@ textarea {
 
 .material-picker {
   margin-bottom: 14px;
+}
+
+.materials-summary-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.materials-summary-box strong,
+.materials-summary-box span {
+  display: block;
+}
+
+.materials-summary-box span {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.materials-summary-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .material-picker-heading {
@@ -1121,6 +1195,7 @@ textarea {
   .stats-grid,
   .template-grid,
   .summary-grid,
+  .work-detail-grid,
   .settings-grid,
   .form-grid,
   .split,
@@ -1166,6 +1241,19 @@ textarea {
   .material-picker-heading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .materials-summary-box {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .materials-summary-actions {
+    justify-content: stretch;
+  }
+
+  .materials-summary-actions button {
+    flex: 1;
   }
 
   .topbar {

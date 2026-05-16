@@ -52,6 +52,13 @@ const emptyDraft: SurveyDraft = {
 
 type ViewName = "dashboard" | "new" | "library" | "components" | "settings";
 type DemoSurvey = (typeof demoSurveys)[number];
+type WorkDetail = {
+  area: string;
+  intervention: string;
+  status: string;
+  notes: string;
+  materials: string[];
+};
 
 export default function Home() {
   const [view, setView] = useState<ViewName>("dashboard");
@@ -69,6 +76,10 @@ export default function Home() {
   const [authOpen, setAuthOpen] = useState(false);
   const [selectedSurvey, setSelectedSurvey] = useState<DemoSurvey | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [workDetails, setWorkDetails] = useState<Record<string, WorkDetail>>({});
+  const [activeWork, setActiveWork] = useState<string | null>(null);
+  const [detailComponentSearch, setDetailComponentSearch] = useState("");
+  const [materialsOpen, setMaterialsOpen] = useState(false);
 
   useEffect(() => {
     async function loadSession() {
@@ -104,6 +115,25 @@ export default function Home() {
       return matchesTerm && matchesCategory;
     }).slice(0, 5);
   }, [categoryFilter, componentSearch, components]);
+
+  const detailComponents = useMemo(() => {
+    const term = detailComponentSearch.toLowerCase();
+    if (term.trim().length < 2) return [];
+    return components
+      .filter((component) => [component.name, component.category, component.unit].join(" ").toLowerCase().includes(term))
+      .slice(0, 5);
+  }, [components, detailComponentSearch]);
+
+  const allMaterials = useMemo(() => {
+    const manualMaterials = draft.materials
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const sectionMaterials = Object.entries(workDetails).flatMap(([work, detail]) =>
+      detail.materials.map((material) => `${work}: ${material}`),
+    );
+    return [...sectionMaterials, ...manualMaterials];
+  }, [draft.materials, workDetails]);
 
   async function loadComponents(ownerId: string) {
     if (!supabase) return;
@@ -260,16 +290,34 @@ export default function Home() {
     setMessage("Sei uscito dall'app.");
   }
 
-  function toggleWork(value: string) {
+  function emptyWorkDetail(): WorkDetail {
+    return {
+      area: "",
+      intervention: "",
+      status: "Da verificare",
+      notes: "",
+      materials: [],
+    };
+  }
+
+  function toggleWork(value: string, checked: boolean) {
     setDraft((current) => {
-      const exists = current.selectedWorks.includes(value);
       return {
         ...current,
-        selectedWorks: exists
-          ? current.selectedWorks.filter((item) => item !== value)
-          : [...current.selectedWorks, value],
+        selectedWorks: checked
+          ? Array.from(new Set([...current.selectedWorks, value]))
+          : current.selectedWorks.filter((item) => item !== value),
       };
     });
+
+    if (checked) {
+      setWorkDetails((current) => ({
+        ...current,
+        [value]: current[value] ?? emptyWorkDetail(),
+      }));
+      setDetailComponentSearch("");
+      setActiveWork(value);
+    }
   }
 
   function addMaterial(component: ComponentItem, quantity: number) {
@@ -278,6 +326,46 @@ export default function Home() {
       ...current,
       materials: current.materials.trim() ? `${current.materials}\n${line}` : line,
     }));
+  }
+
+  function updateActiveWorkDetail(field: "area" | "intervention" | "status" | "notes", value: string) {
+    if (!activeWork) return;
+    setWorkDetails((current) => ({
+      ...current,
+      [activeWork]: {
+        ...(current[activeWork] ?? emptyWorkDetail()),
+        [field]: value,
+      },
+    }));
+  }
+
+  function addMaterialToActiveWork(component: ComponentItem, quantity: number) {
+    if (!activeWork) return;
+    const line = `${quantity} ${component.unit} ${component.name}`;
+    setWorkDetails((current) => {
+      const detail = current[activeWork] ?? emptyWorkDetail();
+      return {
+        ...current,
+        [activeWork]: {
+          ...detail,
+          materials: [...detail.materials, line],
+        },
+      };
+    });
+  }
+
+  function removeMaterialFromActiveWork(index: number) {
+    if (!activeWork) return;
+    setWorkDetails((current) => {
+      const detail = current[activeWork] ?? emptyWorkDetail();
+      return {
+        ...current,
+        [activeWork]: {
+          ...detail,
+          materials: detail.materials.filter((_, itemIndex) => itemIndex !== index),
+        },
+      };
+    });
   }
 
   function updateAttachments(files: FileList | null) {
@@ -394,6 +482,7 @@ export default function Home() {
     buildReport();
     setDraft(emptyDraft);
     setAttachments([]);
+    setWorkDetails({});
   }
 
   function buildReport() {
@@ -404,10 +493,25 @@ export default function Home() {
         draft.contact || "Referente da indicare",
         "",
         "Lavorazioni:",
-        draft.selectedWorks.length ? draft.selectedWorks.join("\n") : "Nessuna lavorazione selezionata",
+        draft.selectedWorks.length
+          ? draft.selectedWorks
+              .map((work) => {
+                const detail = workDetails[work];
+                if (!detail) return work;
+                return [
+                  work,
+                  `Area: ${detail.area || "Non indicata"}`,
+                  `Intervento: ${detail.intervention || "Non indicato"}`,
+                  `Stato: ${detail.status}`,
+                  `Materiali: ${detail.materials.length ? detail.materials.join(", ") : "Nessuno"}`,
+                  `Note: ${detail.notes || "Nessuna nota"}`,
+                ].join("\n");
+              })
+              .join("\n\n")
+          : "Nessuna lavorazione selezionata",
         "",
         "Materiali:",
-        draft.materials || "Nessun materiale inserito",
+        allMaterials.length ? allMaterials.join("\n") : "Nessun materiale inserito",
         "",
         "Foto e documenti:",
         attachments.length ? attachments.map((file) => file.name).join("\n") : "Nessun allegato inserito",
@@ -470,6 +574,160 @@ export default function Home() {
             type="button"
           >
             Crea sopralluogo simile
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const activeWorkDetail = activeWork ? (workDetails[activeWork] ?? emptyWorkDetail()) : null;
+  const workDetailModal = activeWork && activeWorkDetail ? (
+    <div className="modal-backdrop" role="presentation">
+      <div className="work-detail-modal" role="dialog" aria-modal="true" aria-labelledby="work-detail-title">
+        <button className="modal-close" onClick={() => setActiveWork(null)} type="button" aria-label="Chiudi">
+          x
+        </button>
+        <div className="summary-heading">
+          <span className="badge status-ready">Lavorazione selezionata</span>
+          <h2 id="work-detail-title">{activeWork}</h2>
+          <p>Compila i dati tecnici mentre sei sul posto, così il riepilogo finale resta completo.</p>
+        </div>
+        <div className="work-detail-grid">
+          <label>
+            Area
+            <input
+              onChange={(event) => updateActiveWorkDetail("area", event.target.value)}
+              placeholder="Es. Cantina, scale, corsello box"
+              value={activeWorkDetail.area}
+            />
+          </label>
+          <label>
+            Tipo intervento
+            <select
+              onChange={(event) => updateActiveWorkDetail("intervention", event.target.value)}
+              value={activeWorkDetail.intervention}
+            >
+              <option value="">Seleziona intervento</option>
+              <option>Verifica</option>
+              <option>Ripristino</option>
+              <option>Sostituzione</option>
+              <option>Smantellamento</option>
+              <option>Rifacimento completo</option>
+              <option>Test e certificazione</option>
+            </select>
+          </label>
+          <label>
+            Stato
+            <select onChange={(event) => updateActiveWorkDetail("status", event.target.value)} value={activeWorkDetail.status}>
+              <option>Da verificare</option>
+              <option>Da preventivare</option>
+              <option>Urgente</option>
+              <option>Completabile</option>
+              <option>Escluso</option>
+            </select>
+          </label>
+          <label className="work-detail-notes">
+            Descrizione tecnica
+            <textarea
+              onChange={(event) => updateActiveWorkDetail("notes", event.target.value)}
+              placeholder="Es. sostituire plafoniere cantina, verificare dorsale luci e sezione cavo, certificare linea..."
+              value={activeWorkDetail.notes}
+            />
+          </label>
+        </div>
+        <div className="detail-materials">
+          <div className="material-picker-heading">
+            <div>
+              <strong>Materiali per questa lavorazione</strong>
+              <span>Cerca nel catalogo e collega i componenti alla sezione selezionata.</span>
+            </div>
+            <button
+              className="secondary-action compact-action"
+              onClick={() => {
+                setActiveWork(null);
+                setView("components");
+              }}
+              type="button"
+            >
+              Gestisci componenti
+            </button>
+          </div>
+          <input
+            onChange={(event) => setDetailComponentSearch(event.target.value)}
+            placeholder="Cerca almeno 2 caratteri, es. cavo o plafoniera"
+            type="search"
+            value={detailComponentSearch}
+          />
+          {detailComponentSearch.trim().length >= 2 ? (
+            detailComponents.length ? (
+              <div className="component-list compact-component-list">
+                {detailComponents.map((component) => (
+                  <ComponentPickerRow
+                    component={component}
+                    key={component.id ?? component.name}
+                    onAdd={addMaterialToActiveWork}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="material-empty">Nessun componente trovato. Puoi aggiungerlo da Componenti.</p>
+            )
+          ) : null}
+          {activeWorkDetail.materials.length ? (
+            <div className="attachment-list">
+              {activeWorkDetail.materials.map((material, index) => (
+                <article className="attachment-item" key={`${material}-${index}`}>
+                  <div>
+                    <strong>{material}</strong>
+                    <span>{activeWork}</span>
+                  </div>
+                  <button className="secondary-action compact-action" onClick={() => removeMaterialFromActiveWork(index)} type="button">
+                    Rimuovi
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="material-empty">Nessun materiale collegato a questa lavorazione.</p>
+          )}
+        </div>
+        <div className="actions">
+          <button className="primary-action" onClick={() => setActiveWork(null)} type="button">
+            Salva dettaglio
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const materialsModal = materialsOpen ? (
+    <div className="modal-backdrop" role="presentation">
+      <div className="summary-modal" role="dialog" aria-modal="true" aria-labelledby="materials-title">
+        <button className="modal-close" onClick={() => setMaterialsOpen(false)} type="button" aria-label="Chiudi">
+          x
+        </button>
+        <div className="summary-heading">
+          <span className="badge status-ready">{allMaterials.length} materiali</span>
+          <h2 id="materials-title">Lista completa materiali</h2>
+          <p>Riepilogo dei materiali collegati alle lavorazioni e di quelli inseriti manualmente.</p>
+        </div>
+        {allMaterials.length ? (
+          <div className="materials-list-modal">
+            {allMaterials.map((material, index) => (
+              <article className="attachment-item" key={`${material}-${index}`}>
+                <div>
+                  <strong>{material}</strong>
+                  <span>Materiale sopralluogo</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="material-empty">Non hai ancora inserito materiali.</p>
+        )}
+        <div className="actions">
+          <button className="primary-action" onClick={() => setMaterialsOpen(false)} type="button">
+            Chiudi
           </button>
         </div>
       </div>
@@ -804,10 +1062,13 @@ export default function Home() {
                             <label key={value}>
                               <input
                                 checked={draft.selectedWorks.includes(value)}
-                                onChange={() => toggleWork(value)}
+                                onChange={(event) => toggleWork(value, event.target.checked)}
                                 type="checkbox"
                               />
                               {check}
+                              {workDetails[value]?.materials.length ? (
+                                <span className="check-note">{workDetails[value].materials.length} materiali</span>
+                              ) : null}
                             </label>
                           );
                         })}
@@ -822,49 +1083,26 @@ export default function Home() {
                   <h2>Materiali e note</h2>
                   <span>3/4</span>
                 </div>
-                <div className="material-picker">
-                  <div className="material-picker-heading">
-                    <div>
-                      <strong>Ricerca rapida componenti</strong>
-                      <span>Cerca e aggiungi solo i materiali utili a questo sopralluogo.</span>
-                    </div>
+                <div className="materials-summary-box">
+                  <div>
+                    <strong>{allMaterials.length} materiali inseriti</strong>
+                    <span>I componenti principali si aggiungono dalle schede delle singole lavorazioni.</span>
+                  </div>
+                  <div className="materials-summary-actions">
                     <button className="secondary-action compact-action" onClick={() => setView("components")} type="button">
                       Gestisci componenti
                     </button>
+                    <button className="primary-action compact-action" onClick={() => setMaterialsOpen(true)} type="button">
+                      Lista completa
+                    </button>
                   </div>
-                  <div className="picker-toolbar">
-                    <input
-                      onChange={(event) => setComponentSearch(event.target.value)}
-                      placeholder="Cerca almeno 2 caratteri, es. plafoniera"
-                      type="search"
-                      value={componentSearch}
-                    />
-                    <select onChange={(event) => setCategoryFilter(event.target.value)} value={categoryFilter}>
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category === "all" ? "Tutte le categorie" : category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {componentSearch.trim().length < 2 ? (
-                    <p className="material-empty">Il catalogo completo resta nella sezione Componenti.</p>
-                  ) : filteredComponents.length ? (
-                    <div className="component-list compact-component-list">
-                      {filteredComponents.map((component) => (
-                        <ComponentPickerRow component={component} key={component.id ?? component.name} onAdd={addMaterial} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="material-empty">Nessun componente trovato. Puoi aggiungerlo da Componenti.</p>
-                  )}
                 </div>
                 <div className="split">
                   <label>
-                    Lista materiali
+                    Materiali extra o manuali
                     <textarea
                       onChange={(event) => setDraft({ ...draft, materials: event.target.value })}
-                      placeholder="Es. 12 plafoniere LED, 80 m cavo FG16, 1 quadro IP65"
+                      placeholder="Es. materiali non ancora presenti nel catalogo o note libere sui materiali"
                       value={draft.materials}
                     />
                   </label>
@@ -1048,6 +1286,8 @@ export default function Home() {
 
         {authModal}
         {selectedSurveyModal}
+        {workDetailModal}
+        {materialsModal}
       </main>
     </>
   );
