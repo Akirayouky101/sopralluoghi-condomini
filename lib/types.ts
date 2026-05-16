@@ -13,6 +13,13 @@ export type ComponentItem = {
   notes?: string | null;
 };
 
+export type UserProfile = {
+  id: string;
+  full_name: string | null;
+  company: string | null;
+  phone: string | null;
+};
+
 export type SurveyDraft = {
   condominiumName: string;
   address: string;

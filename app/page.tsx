@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { hasSupabaseConfig, supabase } from "@/lib/supabaseClient";
-import type { ComponentItem, SurveyDraft, WorkSection } from "@/lib/types";
+import type { ComponentItem, SurveyDraft, UserProfile, WorkSection } from "@/lib/types";
 
 const workSections: WorkSection[] = [
   {
@@ -62,6 +62,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authOpen, setAuthOpen] = useState(false);
@@ -77,6 +78,7 @@ export default function Home() {
       setUserId(currentUser?.id ?? null);
       setUserEmail(currentUser?.email ?? null);
       if (currentUser) {
+        await loadProfile(currentUser.id, currentUser.user_metadata);
         await loadComponents(currentUser.id);
       }
       setAuthChecked(true);
@@ -117,6 +119,45 @@ export default function Home() {
     }
   }
 
+  async function loadProfile(ownerId: string, metadata?: Record<string, unknown>) {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id,full_name,company,phone")
+      .eq("id", ownerId)
+      .maybeSingle();
+
+    if (error) {
+      setMessage(`Errore caricamento profilo: ${error.message}`);
+      return;
+    }
+
+    if (data) {
+      setProfile(data);
+      return;
+    }
+
+    const fallbackProfile = {
+      id: ownerId,
+      full_name: typeof metadata?.full_name === "string" ? metadata.full_name : null,
+      company: typeof metadata?.company === "string" ? metadata.company : null,
+      phone: typeof metadata?.phone === "string" ? metadata.phone : null,
+    };
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("profiles")
+      .insert(fallbackProfile)
+      .select("id,full_name,company,phone")
+      .single();
+
+    if (insertError) {
+      setMessage(`Errore creazione profilo: ${insertError.message}`);
+      return;
+    }
+
+    setProfile(inserted);
+  }
+
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) {
@@ -137,6 +178,7 @@ export default function Home() {
     const currentUserId = data.user.id;
     setUserId(currentUserId);
     setUserEmail(data.user.email ?? null);
+    await loadProfile(currentUserId, data.user.user_metadata);
     setAuthOpen(false);
     setMessage("Accesso effettuato.");
     await loadComponents(currentUserId);
@@ -150,9 +192,17 @@ export default function Home() {
     }
 
     const form = new FormData(event.currentTarget);
+    const fullName = String(form.get("fullName")).trim();
+    const company = String(form.get("company")).trim();
+    const phone = String(form.get("phone")).trim();
     const email = String(form.get("email"));
     const password = String(form.get("password"));
     const passwordConfirm = String(form.get("passwordConfirm"));
+
+    if (!fullName) {
+      setMessage("Inserisci nome e cognome.");
+      return;
+    }
 
     if (password.length < 8) {
       setMessage("La password deve avere almeno 8 caratteri.");
@@ -164,7 +214,17 @@ export default function Home() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          company,
+          phone,
+        },
+      },
+    });
 
     if (error) {
       setMessage(error.message);
@@ -174,6 +234,7 @@ export default function Home() {
     if (data.user && data.session) {
       setUserId(data.user.id);
       setUserEmail(data.user.email ?? null);
+      await loadProfile(data.user.id, data.user.user_metadata);
       setAuthOpen(false);
       setMessage("Registrazione completata. Sei gia dentro l'app.");
       await loadComponents(data.user.id);
@@ -190,6 +251,7 @@ export default function Home() {
     }
     setUserId(null);
     setUserEmail(null);
+    setProfile(null);
     setView("dashboard");
     setMessage("Sei uscito dall'app.");
   }
@@ -339,6 +401,9 @@ export default function Home() {
     );
   }
 
+  const profileLabel = profile?.full_name || userEmail || "Profilo";
+  const profileDetail = profile?.company || userEmail;
+
   const authModal = authOpen ? (
     <div className="modal-backdrop" role="presentation">
       <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
@@ -368,6 +433,22 @@ export default function Home() {
             </button>
           </div>
           {!hasSupabaseConfig ? <p className="notice">Supabase non e configurato.</p> : null}
+          {authMode === "register" ? (
+            <>
+              <label>
+                Nome e cognome
+                <input name="fullName" placeholder="Mario Rossi" required type="text" />
+              </label>
+              <label>
+                Azienda
+                <input name="company" placeholder="Rossi Impianti" type="text" />
+              </label>
+              <label>
+                Telefono
+                <input name="phone" placeholder="+39 333 1234567" type="tel" />
+              </label>
+            </>
+          ) : null}
           <label>
             Email
             <input name="email" placeholder="tu@email.it" required type="email" />
@@ -504,8 +585,8 @@ export default function Home() {
                   {(userEmail ?? "U").slice(0, 1).toUpperCase()}
                 </span>
                 <div>
-                  <strong>Profilo</strong>
-                  <small>{userEmail}</small>
+                  <strong>{profileLabel}</strong>
+                  <small>{profileDetail}</small>
                 </div>
                 <button className="secondary-action compact-action" onClick={signOut} type="button">
                   Esci

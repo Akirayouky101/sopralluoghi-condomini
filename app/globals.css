@@ -330,6 +330,8 @@ h2 {
 .auth-modal {
   position: relative;
   width: min(460px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;

@@ -1,5 +1,14 @@
 create extension if not exists "pgcrypto";
 
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  company text,
+  phone text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.condominiums (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -65,12 +74,47 @@ create table if not exists public.survey_photos (
   created_at timestamptz not null default now()
 );
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, full_name, company, phone)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'company',
+    new.raw_user_meta_data->>'phone'
+  )
+  on conflict (id) do update
+    set full_name = excluded.full_name,
+        company = excluded.company,
+        phone = excluded.phone,
+        updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+alter table public.profiles enable row level security;
 alter table public.condominiums enable row level security;
 alter table public.surveys enable row level security;
 alter table public.survey_sections enable row level security;
 alter table public.component_catalog enable row level security;
 alter table public.survey_materials enable row level security;
 alter table public.survey_photos enable row level security;
+
+create policy "Users manage own profile"
+  on public.profiles for all
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
 
 create policy "Users manage own condominiums"
   on public.condominiums for all
@@ -102,6 +146,7 @@ create policy "Users manage own survey photos"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+create index if not exists profiles_company_idx on public.profiles(company);
 create index if not exists condominiums_user_id_idx on public.condominiums(user_id);
 create index if not exists surveys_user_id_idx on public.surveys(user_id);
 create index if not exists surveys_condominium_id_idx on public.surveys(condominium_id);
