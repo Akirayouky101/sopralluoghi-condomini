@@ -415,8 +415,8 @@ h2 {
 .auth-modal {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(230px, 0.8fr) minmax(340px, 1fr);
-  width: min(860px, 100%);
+  grid-template-columns: minmax(260px, 0.86fr) minmax(360px, 1fr);
+  width: min(880px, 100%);
   max-height: calc(100vh - 36px);
   overflow: auto;
   background: var(--surface);
@@ -444,8 +444,15 @@ h2 {
   position: relative;
   overflow: hidden;
   min-height: 100%;
-  padding: 26px;
-  background: linear-gradient(145deg, #075fb6 0%, #00866f 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 34px 28px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.2), transparent 36%),
+    linear-gradient(145deg, #075fb6 0%, #00866f 100%);
   color: #ffffff;
 }
 
@@ -474,7 +481,7 @@ h2 {
 .modal-logo {
   width: 58px;
   height: 58px;
-  margin-top: 48px;
+  margin-top: 28px;
   border-radius: 8px;
   display: grid;
   place-items: center;
@@ -501,6 +508,7 @@ h2 {
   gap: 9px;
   position: relative;
   z-index: 1;
+  width: 100%;
 }
 
 .modal-feature-list span {
@@ -513,12 +521,15 @@ h2 {
 }
 
 .modal-content {
-  padding: 28px;
+  display: grid;
+  align-content: center;
+  padding: 34px;
 }
 
 .modal-heading {
-  padding-right: 36px;
+  padding-right: 34px;
   margin-bottom: 18px;
+  text-align: center;
 }
 
 .modal-heading h2 {
@@ -542,50 +553,84 @@ h2 {
   place-items: center;
   padding: 28px;
   background:
-    linear-gradient(135deg, rgba(0, 119, 217, 0.09), rgba(0, 168, 134, 0.08)),
+    radial-gradient(circle at 50% 0%, rgba(0, 119, 217, 0.13), transparent 34%),
+    linear-gradient(135deg, rgba(0, 119, 217, 0.08), rgba(0, 168, 134, 0.08)),
     var(--bg);
 }
 
 .locked-panel {
-  width: min(560px, 100%);
+  width: min(720px, 100%);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(216, 227, 239, 0.92);
   border-radius: 8px;
-  box-shadow: var(--shadow);
-  padding: 30px;
+  box-shadow: 0 28px 80px rgba(28, 67, 107, 0.13);
+  padding: 42px;
+  text-align: center;
+}
+
+.locked-mark {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--mint));
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 16px 34px rgba(0, 119, 217, 0.22);
+}
+
+.locked-panel .eyebrow {
+  margin-bottom: 10px;
 }
 
 .locked-panel h1 {
-  margin-bottom: 12px;
+  max-width: 620px;
+  margin: 0 auto 14px;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  letter-spacing: 0;
 }
 
 .locked-panel p:last-of-type {
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
   color: var(--muted);
-  margin-bottom: 20px;
-  line-height: 1.5;
+  margin-bottom: 24px;
+  line-height: 1.55;
+  font-size: 1.08rem;
 }
 
 .locked-highlights {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 22px;
+  gap: 10px;
+  margin: 0 auto 26px;
+  max-width: 600px;
 }
 
 .locked-highlights span {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--surface-raised);
+  background: linear-gradient(180deg, #ffffff, var(--surface-raised));
   color: var(--muted);
-  padding: 10px;
-  font-size: 0.86rem;
+  padding: 13px 12px;
+  font-size: 0.9rem;
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .locked-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: center;
+}
+
+.locked-actions .primary-action,
+.locked-actions .secondary-action {
+  min-width: 150px;
 }
 
 .locked-notice {
@@ -952,5 +997,18 @@ textarea {
 
   .modal-logo {
     display: none;
+  }
+
+  .locked-panel {
+    padding: 28px 18px;
+  }
+
+  .locked-panel h1 {
+    font-size: 2.15rem;
+  }
+
+  .locked-actions .primary-action,
+  .locked-actions .secondary-action {
+    width: 100%;
   }
 }

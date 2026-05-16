@@ -526,6 +526,7 @@ export default function Home() {
         <main className="locked-main">
           {message ? <p className="notice locked-notice">{message}</p> : null}
           <section className="locked-panel">
+            <div className="locked-mark">SC</div>
             <p className="eyebrow">Accesso riservato</p>
             <h1>Sopralluoghi Condomini</h1>
             <p>Accedi o registrati per usare il gestionale, salvare componenti e creare sopralluoghi.</p>
